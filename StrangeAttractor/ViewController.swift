@@ -12,11 +12,10 @@ class ViewController: UIViewController {
 
     var strangeAttractorRenderer: StrangeAttractorRenderer!
 
-    override func viewDidLoad()
-    {
+    override func viewDidLoad() {
         super.viewDidLoad()
         
-        view.backgroundColor = UIColor.blackColor()
+        view.backgroundColor = .black
         
         let side = min(view.frame.width, view.frame.height)
         
@@ -24,26 +23,25 @@ class ViewController: UIViewController {
             frame: CGRect(x: 0, y: 0, width: side, height: side),
             device: MTLCreateSystemDefaultDevice()!, 
             width: side,
-            contentScaleFactor: UIScreen.mainScreen().scale)
+            contentScaleFactor: UIScreen.main.scale)
         
         view.addSubview(strangeAttractorRenderer)
     }
 
     
-    override func viewDidAppear(animated: Bool)
-    {
+    override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        strangeAttractorRenderer.paused = false
+        strangeAttractorRenderer.isPaused = false
     }
+//
+//    override func prefersStatusBarHidden() -> Bool {
+//        return true
+//    }
 
-    override func prefersStatusBarHidden() -> Bool
-    {
-        return true
-    }
+//    func prefer
 
-    override func viewDidLayoutSubviews()
-    {
+    override func viewDidLayoutSubviews() {
         let side = min(view.frame.width, view.frame.height)
         
         strangeAttractorRenderer.frame = CGRect(
