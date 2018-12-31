@@ -10,6 +10,18 @@ import Foundation
 import MetalKit
 import simd.vector
 
+extension MTLLibrary {
+    func makePipelineState(name: String) -> MTLComputePipelineState {
+        guard let function = makeFunction(name: name) else {
+            fatalError("Unable to create kernel function for \(name)")
+        }
+        guard let pipeline = try? device.makeComputePipelineState(function: function) else {
+            fatalError("Unable to create pipeline state for \(name)")
+        }
+        return pipeline
+    }
+}
+
 class StrangeAttractorRenderer: MTKView {
     private var pointCount =  262144 // 262144 points at 60fps / 20 iterations per frame = 3.64 mins
     private let alignment:Int = 0x4000
@@ -26,7 +38,7 @@ class StrangeAttractorRenderer: MTKView {
 
     private var angle: Float = 0
     private var pointIndex: UInt = 1
-    private var frameStartTime: CFAbsoluteTime!
+    private var frameStartTime: CFAbsoluteTime
     private var frameNumber = 0
 
     private var panStartAngle: Float = 0
@@ -46,42 +58,13 @@ class StrangeAttractorRenderer: MTKView {
 
     let segmentedControl = UISegmentedControl(items: ["Lorenz", "Chen Lee", "Halvorsen", "Lü Chen", "Hadley", "Rössler", "Lorenze Mod 2"])
 
-    lazy var commandQueue: MTLCommandQueue = {
-        return self.device!.makeCommandQueue()!
-    }()
-
+    let commandQueue: MTLCommandQueue
     let defaultLibrary: MTLLibrary
 
-    lazy var pipelineState: MTLComputePipelineState = {
-        guard let kernelFunction = self.defaultLibrary.makeFunction(name: "strangeAttractorKernel") else {
-            fatalError("Unable to create kernel function for strangeAttractorKernel")
-        }
+    let pipelineState: MTLComputePipelineState
+    let rendererPipelineState: MTLComputePipelineState
 
-        do {
-            let pipelineState = try self.device!.makeComputePipelineState(function: kernelFunction)
-            return pipelineState
-        }
-        catch {
-            fatalError("Unable to create pipeline state for strangeAttractorKernel")
-        }
-    }()
-
-    lazy var rendererPipelineState: MTLComputePipelineState = {
-        guard let kernelFunction = self.defaultLibrary.makeFunction(name: "strangeAttractorRendererKernel") else {
-            fatalError("Unable to create kernel function for strangeAttractorKernel")
-        }
-
-        do {
-            let pipelineState = try self.device!.makeComputePipelineState(function: kernelFunction)
-            return pipelineState
-        }
-        catch {
-            fatalError("Unable to create pipeline state for strangeAttractorKernel")
-        }
-    }()
-
-    lazy var threadsPerThreadgroup: MTLSize =
-    {
+    lazy var threadsPerThreadgroup: MTLSize = {
         let threadExecutionWidth = self.pipelineState.threadExecutionWidth
 
         return MTLSize(width:threadExecutionWidth,height:1,depth:1)
@@ -97,7 +80,9 @@ class StrangeAttractorRenderer: MTKView {
 
     required init(frame frameRect: CGRect, device: MTLDevice, width: CGFloat, contentScaleFactor: CGFloat) {
         defaultLibrary = device.makeDefaultLibrary()!
-//        var pipelineState: MTLComputePipelineState
+        commandQueue = device.makeCommandQueue()!
+        pipelineState = defaultLibrary.makePipelineState(name: "strangeAttractorKernel")
+        rendererPipelineState = defaultLibrary.makePipelineState(name: "strangeAttractorRendererKernel")
 
         self.width = width
 
@@ -123,6 +108,8 @@ class StrangeAttractorRenderer: MTKView {
                                          length: MemoryLayout<UInt>.size,
                                          options: [])!
 
+        frameStartTime = CFAbsoluteTimeGetCurrent()
+
         super.init(frame: frameRect, device: device)
 
         self.contentScaleFactor = contentScaleFactor
@@ -131,8 +118,6 @@ class StrangeAttractorRenderer: MTKView {
         framebufferOnly = false
 
         pointBufferPtr[pointBufferPtr.startIndex] = float3(rnd(), rnd(), rnd())
-
-        frameStartTime = CFAbsoluteTimeGetCurrent()
 
         let pinch = UIPinchGestureRecognizer(target: self, action: #selector(pinchHandler))
         addGestureRecognizer(pinch)
