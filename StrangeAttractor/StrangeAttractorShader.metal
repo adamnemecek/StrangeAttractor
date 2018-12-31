@@ -12,8 +12,7 @@ using namespace metal;
 
 void drawLine(texture2d<float, access::write> targetTexture, uint2 start, uint2 end, float3 color);
 
-void drawLine(texture2d<float, access::write> targetTexture, uint2 start, uint2 end, float3 color)
-{
+void drawLine(texture2d<float, access::write> targetTexture, uint2 start, uint2 end, float3 color) {
     int iterations = 0;
     
     int x = int(start.x);
@@ -30,30 +29,25 @@ void drawLine(texture2d<float, access::write> targetTexture, uint2 start, uint2 
     int width = int(targetTexture.get_width());
     int height = int(targetTexture.get_height());
     
-    while (true)
-    {
-        if (x > 0 && y > 0 && x < width && y < height)
-        {
+    while (true) {
+        if (x > 0 && y > 0 && x < width && y < height) {
             targetTexture.write(float4(color, 1.0), uint2(x, y));
         }
         
         iterations++;
         
-        if (iterations > 250 || (x == int(end.x) && y == int(end.y)))
-        {
+        if (iterations > 250 || (x == int(end.x) && y == int(end.y))) {
             break;
         }
         
         int e2 = err;
         
-        if (e2 > -dx)
-        {
+        if (e2 > -dx) {
             err -= dy;
             x += sx;
         }
         
-        if (e2 < dy)
-        {
+        if (e2 < dy) {
             err += dx;
             y += sy;
         }
@@ -66,22 +60,18 @@ kernel void strangeAttractorKernel(const device float3 *inPoints [[ buffer(0) ]]
                                    constant uint &pointIndex [[ buffer(3) ]],
                         
                                    constant uint &attractorTypeIndex [[ buffer(6) ]],
-                                   uint id [[thread_position_in_grid]])
-{
+                                   uint id [[thread_position_in_grid]]) {
     float3 thisPoint = inPoints[id];
     
-    if (id < 1 || id > pointIndex)
-    {
+    if (id < 1 || id > pointIndex) {
         return;
     }
-    else if (id == pointIndex)
-    {
+    else if (id == pointIndex) {
         float divisor = 300.0;
         float3 previousPoint = inPoints[id - 1];
         float3 delta;
 
-        if (attractorTypeIndex == 1)
-        {
+        if (attractorTypeIndex == 1) {
             // Chen Lee
             delta = {
                 5 * previousPoint.x -  previousPoint.y * previousPoint.z,
@@ -89,8 +79,7 @@ kernel void strangeAttractorKernel(const device float3 *inPoints [[ buffer(0) ]]
                 -0.38 * previousPoint.z + previousPoint.x * (previousPoint.y / 3.0)
             };
         }
-        else if (attractorTypeIndex == 2)
-        {
+        else if (attractorTypeIndex == 2) {
             // Halvorsen
             float a = 1.4;
             delta = {
@@ -99,8 +88,7 @@ kernel void strangeAttractorKernel(const device float3 *inPoints [[ buffer(0) ]]
                 -a * previousPoint.z - 4 * previousPoint.x - 4 * previousPoint.y - previousPoint.x * previousPoint.x
             };
         }
-        else if (attractorTypeIndex == 3)
-        {
+        else if (attractorTypeIndex == 3) {
             // Lü Chen
             float alpha = -10.0;
             float beta = -4.0;
@@ -111,8 +99,7 @@ kernel void strangeAttractorKernel(const device float3 *inPoints [[ buffer(0) ]]
                 beta * previousPoint.z + previousPoint.x * previousPoint.y
             };
         }
-        else if (attractorTypeIndex == 4)
-        {
+        else if (attractorTypeIndex == 4) {
             // Hadley
             float alpha = 0.2;
             float beta = 4.0;
@@ -124,8 +111,7 @@ kernel void strangeAttractorKernel(const device float3 *inPoints [[ buffer(0) ]]
                 beta * previousPoint.x * previousPoint.y + previousPoint.x * previousPoint.z - previousPoint.z
             };
         }
-        else if (attractorTypeIndex == 5)
-        {
+        else if (attractorTypeIndex == 5) {
             // Rössler
             float alpha = 0.2;
             float beta = 0.2;
@@ -136,8 +122,7 @@ kernel void strangeAttractorKernel(const device float3 *inPoints [[ buffer(0) ]]
                 beta + previousPoint.z * (previousPoint.x - sigma)
             };
         }
-        else if (attractorTypeIndex == 6)
-        {
+        else if (attractorTypeIndex == 6) {
             // Lorenze mod 2
             float a = 0.9;
             float b = 5;
@@ -150,8 +135,7 @@ kernel void strangeAttractorKernel(const device float3 *inPoints [[ buffer(0) ]]
             };
             
         }
-        else
-        {
+        else {
             // Lorenz (defalt)
             float sigma = 10.0;
             float beta = 8.0 / 3.0;
@@ -175,12 +159,10 @@ kernel void strangeAttractorRendererKernel(texture2d<float, access::write> outTe
                                    constant uint &pointIndex [[ buffer(3) ]],
                                    constant uint &center [[ buffer(4) ]],
                                    constant float &scale [[ buffer(5) ]],
-                                   uint id [[thread_position_in_grid]])
-{
+                                   uint id [[thread_position_in_grid]]) {
     float3 thisPoint = inPoints[id];
     
-    if (id < 1 || id > pointIndex - 1)
-    {
+    if (id < 1 || id > pointIndex - 1) {
         return;
     }
 
