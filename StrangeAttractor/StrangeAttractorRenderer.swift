@@ -22,6 +22,16 @@ extension MTLLibrary {
     }
 }
 
+extension MTLComputePipelineState {
+    var threadsPerThreadgroup: MTLSize {
+        return MTLSize(width:threadExecutionWidth,height:1,depth:1)
+    }
+
+    func threadgroupsPerGrid(pointCount: Int) -> MTLSize {
+        return MTLSize(width: pointCount / threadExecutionWidth, height:1, depth:1)
+    }
+}
+
 class StrangeAttractorRenderer: MTKView {
     private var pointCount =  262144 // 262144 points at 60fps / 20 iterations per frame = 3.64 mins
     private let alignment:Int = 0x4000
@@ -64,25 +74,16 @@ class StrangeAttractorRenderer: MTKView {
     let pipelineState: MTLComputePipelineState
     let rendererPipelineState: MTLComputePipelineState
 
-    lazy var threadsPerThreadgroup: MTLSize = {
-        let threadExecutionWidth = self.pipelineState.threadExecutionWidth
-
-        return MTLSize(width:threadExecutionWidth,height:1,depth:1)
-    }()
-
-    lazy var threadgroupsPerGrid: MTLSize = {
-        [unowned self] in
-
-        let threadExecutionWidth = self.pipelineState.threadExecutionWidth
-
-        return MTLSize(width: self.pointCount / threadExecutionWidth, height:1, depth:1)
-    }()
+    let threadsPerThreadgroup: MTLSize
+    let threadgroupsPerGrid: MTLSize
 
     required init(frame frameRect: CGRect, device: MTLDevice, width: CGFloat, contentScaleFactor: CGFloat) {
         defaultLibrary = device.makeDefaultLibrary()!
         commandQueue = device.makeCommandQueue()!
         pipelineState = defaultLibrary.makePipelineState(name: "strangeAttractorKernel")
         rendererPipelineState = defaultLibrary.makePipelineState(name: "strangeAttractorRendererKernel")
+        threadsPerThreadgroup = pipelineState.threadsPerThreadgroup
+        threadgroupsPerGrid = pipelineState.threadgroupsPerGrid(pointCount: pointCount)
 
         self.width = width
 
@@ -94,9 +95,7 @@ class StrangeAttractorRenderer: MTKView {
 
         pointMemoryByteSize = pointCount * MemoryLayout<float3>.size
 
-        posix_memalign(&pointMemory,
-                       alignment,
-                       pointMemoryByteSize)
+        posix_memalign(&pointMemory, alignment, pointMemoryByteSize)
 
 //        pointVoidPtr = OpaquePointer(pointMemory)
 
@@ -213,10 +212,9 @@ class StrangeAttractorRenderer: MTKView {
 
             commandEncoder.setComputePipelineState(pipelineState)
 
-            let pointIndexBuffer = device!.makeBuffer(
-                bytes: &pointIndex,
-                length: MemoryLayout<UInt>.size,
-                options: [])
+            let pointIndexBuffer = device!.makeBuffer(bytes: &pointIndex,
+                                                      length: MemoryLayout<UInt>.size,
+                                                      options: [])
 
             commandEncoder.setBuffer(pointBuffer, offset: 0,index: 0)
             commandEncoder.setBuffer(pointBuffer, offset: 0,index: 1)
