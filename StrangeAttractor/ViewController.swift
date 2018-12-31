@@ -14,24 +14,24 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         view.backgroundColor = .black
-        
+
         let side = min(view.frame.width, view.frame.height)
-        
+
         strangeAttractorRenderer = StrangeAttractorRenderer(
             frame: CGRect(x: 0, y: 0, width: side, height: side),
-            device: MTLCreateSystemDefaultDevice()!, 
+            device: MTLCreateSystemDefaultDevice()!,
             width: side,
             contentScaleFactor: UIScreen.main.scale)
-        
+
         view.addSubview(strangeAttractorRenderer)
     }
 
-    
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
+
         strangeAttractorRenderer.isPaused = false
     }
 //
@@ -43,7 +43,7 @@ class ViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         let side = min(view.frame.width, view.frame.height)
-        
+
         strangeAttractorRenderer.frame = CGRect(
             x: (view.frame.width - side) / 2,
             y: (view.frame.height - side) / 2,
